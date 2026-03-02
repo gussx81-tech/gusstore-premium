@@ -89,7 +89,7 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
       name: cleanName,
       price: Number(draft.price),
       stock: draft.stock,
-      whatsappUrl: draft.whatsappUrl.trim() || createWhatsAppUrl(cleanName),
+      whatsappUrl: draft.whatsappUrl.trim() || createWhatsAppUrl(cleanName, Number(draft.price)),
       image: draft.image,
     });
 

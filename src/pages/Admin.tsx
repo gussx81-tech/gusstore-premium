@@ -60,7 +60,7 @@ const Admin = () => {
         <div className="mx-auto w-full max-w-md rounded-2xl border border-border/60 bg-card/70 p-6 backdrop-blur-xl">
           <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Ruta oculta</p>
           <h1 className="font-display mt-2 text-3xl text-foreground">Panel Admin</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Ingresa la contraseña para gestionar Gusstore.lat.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Ingresa usuario y contraseña para gestionar Gusstore.lat.</p>
 
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
             <div className="space-y-2">

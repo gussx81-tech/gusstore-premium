@@ -51,17 +51,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <HeroSection />
-
-      <section className="border-y border-border/60 bg-card/50 py-3 backdrop-blur-sm">
-        <div className="overflow-hidden px-4 sm:px-6 lg:px-10">
-          <p className="whitespace-nowrap text-sm font-medium text-foreground" style={{ animation: "announcement-marquee 18s linear infinite" }}>
-            {announcement} · {announcement}
-          </p>
+      <section className="border-b border-border/60 bg-card/70 py-2">
+        <div className="mx-auto w-full max-w-6xl px-4 text-center text-sm font-medium text-foreground sm:px-6 lg:px-10">
+          {announcement}
         </div>
       </section>
 
-      <style>{`@keyframes announcement-marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }`}</style>
+      <HeroSection />
 
       <main id="catalogo" className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-14 sm:px-6 lg:px-10">
         <section className="mb-7 flex items-end justify-between gap-3">
