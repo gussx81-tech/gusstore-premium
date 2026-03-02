@@ -13,13 +13,22 @@ interface ProductEditorDialogProps {
   onOpenChange: (open: boolean) => void;
   initialProduct?: Product | null;
   onSave: (product: Product) => void;
+  onDelete?: (id: string) => void; // <-- Nueva prop
 }
 
-const emptyDraft = { name: "", price: 0, stock: "Disponible" as ProductStock, whatsappUrl: "", image: "" };
+interface ProductDraft {
+  name: string;
+  price: number;
+  stock: ProductStock;
+  whatsappUrl: string;
+  image: string;
+}
 
-const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: ProductEditorDialogProps) => {
+const emptyDraft: ProductDraft = { name: "", price: 0, stock: "Disponible", whatsappUrl: "", image: "" };
+
+const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDelete }: ProductEditorDialogProps) => {
   const isEditing = Boolean(initialProduct);
-  const [draft, setDraft] = useState(emptyDraft);
+  const [draft, setDraft] = useState<ProductDraft>(emptyDraft);
   const [cropOpen, setCropOpen] = useState(false);
   const [cropImage, setCropImage] = useState("");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -61,52 +70,39 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto bg-card border-border/70">
-          <DialogHeader><DialogTitle>{isEditing ? "Editar Producto" : "Nuevo Producto"}</DialogTitle></DialogHeader>
+        <DialogContent className="max-h-[90vh] overflow-y-auto border-border/70 bg-card">
+          <DialogHeader><DialogTitle className="font-display text-2xl">{isEditing ? "Editar producto" : "Nuevo producto"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <Label>Nombre</Label>
             <Input value={draft.name} onChange={(e) => setDraft(p => ({ ...p, name: e.target.value }))} />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Precio (S/)</Label>
-                <Input type="number" value={draft.price || ""} onChange={(e) => setDraft(p => ({ ...p, price: Number(e.target.value) }))} />
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div><Label>Precio (S/)</Label><Input type="number" value={draft.price || ""} onChange={(e) => setDraft(p => ({ ...p, price: Number(e.target.value) }))} /></div>
               <div>
                 <Label>Stock</Label>
-                <select value={draft.stock} onChange={(e) => setDraft(p => ({ ...p, stock: e.target.value as ProductStock }))} className="w-full h-10 rounded-md border bg-background px-3 text-sm">
-                  <option value="Disponible">Disponible</option>
-                  <option value="Agotado">Agotado</option>
+                <select value={draft.stock} onChange={(e) => setDraft(p => ({ ...p, stock: e.target.value as ProductStock }))} className="flex h-10 w-full rounded-md border bg-background px-3 text-sm">
+                  <option value="Disponible">Disponible</option><option value="Agotado">Agotado</option>
                 </select>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label>Imagen</Label>
-              <Input type="file" accept="image/*" onChange={handleUploadImage} />
-              {draft.image && <img src={draft.image} className="mt-2 h-32 w-full rounded-lg object-cover" />}
-            </div>
-
-            <Button onClick={handleSaveProduct} className="w-full bg-gradient-brand text-white font-bold">
-              {isEditing ? "Guardar Cambios" : "Crear Producto"}
-            </Button>
+            <Label>Imagen</Label>
+            <Input type="file" accept="image/*" onChange={handleUploadImage} />
+            {draft.image && <img src={draft.image} className="mt-2 h-32 w-full rounded-lg object-cover" />}
             
-            {isEditing && (
-              <Button 
-                variant="outline" 
-                onClick={() => alert("Para borrar: Limpia el nombre y dale a Guardar, o búscalo en src/data/products.ts")} 
-                className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold"
-              >
-                ELIMINAR (VER INSTRUCCIONES)
-              </Button>
-            )}
+            <div className="flex flex-col gap-2 pt-4">
+              <Button onClick={handleSaveProduct} className="w-full bg-gradient-brand text-white font-bold">Guardar</Button>
+              {isEditing && onDelete && initialProduct && (
+                <Button variant="outline" onClick={() => onDelete(initialProduct.id)} className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold">
+                  ELIMINAR PRODUCTO
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={cropOpen} onOpenChange={setCropOpen}>
         <DialogContent>
-          <div className="relative h-64 w-full bg-background overflow-hidden rounded-xl">
+          <div className="relative h-64 w-full overflow-hidden rounded-xl">
             <Cropper image={cropImage} crop={crop} zoom={zoom} aspect={4 / 3} onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={(_, ap) => setCroppedAreaPixels(ap)} />
           </div>
           <Button onClick={handleCropSave} className="w-full bg-gradient-brand text-white">Guardar Recorte</Button>
