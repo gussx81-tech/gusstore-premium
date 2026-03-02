@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { getCroppedImage } from "@/lib/cropImage";
 import { createWhatsAppUrl } from "@/lib/productsStorage";
 import type { Product, ProductStock } from "@/types/product";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ProductEditorDialogProps {
   open: boolean;
@@ -16,25 +15,11 @@ interface ProductEditorDialogProps {
   onSave: (product: Product) => void;
 }
 
-interface ProductDraft {
-  name: string;
-  price: number;
-  stock: ProductStock;
-  whatsappUrl: string;
-  image: string;
-}
-
-const emptyDraft: ProductDraft = {
-  name: "",
-  price: 0,
-  stock: "Disponible",
-  whatsappUrl: "",
-  image: "",
-};
+const emptyDraft = { name: "", price: 0, stock: "Disponible" as ProductStock, whatsappUrl: "", image: "" };
 
 const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: ProductEditorDialogProps) => {
   const isEditing = Boolean(initialProduct);
-  const [draft, setDraft] = useState<ProductDraft>(emptyDraft);
+  const [draft, setDraft] = useState(emptyDraft);
   const [cropOpen, setCropOpen] = useState(false);
   const [cropImage, setCropImage] = useState("");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -42,18 +27,14 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   useEffect(() => {
-    if (!open) return;
-    setDraft(initialProduct ? { ...initialProduct } : emptyDraft);
+    if (open) setDraft(initialProduct ? { ...initialProduct } : emptyDraft);
   }, [open, initialProduct]);
 
   const handleUploadImage = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      setCropImage(String(reader.result));
-      setCropOpen(true);
-    };
+    reader.onload = () => { setCropImage(String(reader.result)); setCropOpen(true); };
     reader.readAsDataURL(file);
   };
 
@@ -77,55 +58,23 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
     onOpenChange(false);
   };
 
-  // --- FUNCIÓN PARA ELIMINAR DE VERDAD ---
-  const handleDelete = async () => {
-    if (!initialProduct?.id) return;
-    
-    const confirmar = confirm(`¿Borrar "${draft.name}" permanentemente?`);
-    if (confirmar) {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', initialProduct.id);
-
-        if (error) throw error;
-        
-        alert("Eliminado con éxito");
-        onOpenChange(false);
-        window.location.reload(); 
-      } catch (err) {
-        alert("Error al borrar el producto");
-      }
-    }
-  };
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto bg-card border-border/70">
-          <DialogHeader>
-            <DialogTitle>{isEditing ? "Editar Producto" : "Nuevo Producto"}</DialogTitle>
-          </DialogHeader>
-
+          <DialogHeader><DialogTitle>{isEditing ? "Editar Producto" : "Nuevo Producto"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nombre</Label>
-              <Input value={draft.name} onChange={(e) => setDraft(p => ({ ...p, name: e.target.value }))} />
-            </div>
-
+            <Label>Nombre</Label>
+            <Input value={draft.name} onChange={(e) => setDraft(p => ({ ...p, name: e.target.value }))} />
+            
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div>
                 <Label>Precio (S/)</Label>
                 <Input type="number" value={draft.price || ""} onChange={(e) => setDraft(p => ({ ...p, price: Number(e.target.value) }))} />
               </div>
-              <div className="space-y-2">
+              <div>
                 <Label>Stock</Label>
-                <select 
-                  value={draft.stock} 
-                  onChange={(e) => setDraft(p => ({ ...p, stock: e.target.value as ProductStock }))}
-                  className="w-full h-10 rounded-md border bg-background px-3 text-sm"
-                >
+                <select value={draft.stock} onChange={(e) => setDraft(p => ({ ...p, stock: e.target.value as ProductStock }))} className="w-full h-10 rounded-md border bg-background px-3 text-sm">
                   <option value="Disponible">Disponible</option>
                   <option value="Agotado">Agotado</option>
                 </select>
@@ -138,17 +87,19 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
               {draft.image && <img src={draft.image} className="mt-2 h-32 w-full rounded-lg object-cover" />}
             </div>
 
-            <div className="flex flex-col gap-2 pt-4">
-              <Button onClick={handleSaveProduct} className="w-full bg-gradient-brand text-white font-bold">
-                {isEditing ? "Guardar Cambios" : "Crear Producto"}
+            <Button onClick={handleSaveProduct} className="w-full bg-gradient-brand text-white font-bold">
+              {isEditing ? "Guardar Cambios" : "Crear Producto"}
+            </Button>
+            
+            {isEditing && (
+              <Button 
+                variant="outline" 
+                onClick={() => alert("Para borrar: Limpia el nombre y dale a Guardar, o búscalo en src/data/products.ts")} 
+                className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold"
+              >
+                ELIMINAR (VER INSTRUCCIONES)
               </Button>
-              
-              {isEditing && (
-                <Button variant="outline" onClick={handleDelete} className="w-full border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold">
-                  ELIMINAR PRODUCTO
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -156,15 +107,7 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
       <Dialog open={cropOpen} onOpenChange={setCropOpen}>
         <DialogContent>
           <div className="relative h-64 w-full bg-background overflow-hidden rounded-xl">
-            <Cropper
-              image={cropImage}
-              crop={crop}
-              zoom={zoom}
-              aspect={4 / 3}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
-            />
+            <Cropper image={cropImage} crop={crop} zoom={zoom} aspect={4 / 3} onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={(_, ap) => setCroppedAreaPixels(ap)} />
           </div>
           <Button onClick={handleCropSave} className="w-full bg-gradient-brand text-white">Guardar Recorte</Button>
         </DialogContent>
