@@ -13,6 +13,7 @@ interface ProductEditorDialogProps {
   onOpenChange: (open: boolean) => void;
   initialProduct?: Product | null;
   onSave: (product: Product) => void;
+  onDelete?: (id: string) => void; // <-- Nueva prop para borrar
 }
 
 interface ProductDraft {
@@ -31,7 +32,7 @@ const emptyDraft: ProductDraft = {
   image: "",
 };
 
-const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: ProductEditorDialogProps) => {
+const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDelete }: ProductEditorDialogProps) => {
   const isEditing = Boolean(initialProduct);
   const [draft, setDraft] = useState<ProductDraft>(emptyDraft);
   const [cropOpen, setCropOpen] = useState(false);
@@ -96,6 +97,14 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
     onOpenChange(false);
   };
 
+  // Función para manejar el borrado
+  const handleDelete = () => {
+    if (initialProduct && confirm(`¿Estás seguro de que quieres eliminar "${initialProduct.name}"?`)) {
+      onDelete?.(initialProduct.id);
+      onOpenChange(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -134,7 +143,7 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
                   id="stock"
                   value={draft.stock}
                   onChange={(e) => setDraft((prev) => ({ ...prev, stock: e.target.value as ProductStock }))}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                 >
                   <option value="Disponible">Disponible</option>
                   <option value="Agotado">Agotado</option>
@@ -168,9 +177,21 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: Pro
               )}
             </div>
 
-            <Button onClick={handleSaveProduct} className="w-full bg-gradient-brand text-primary-foreground shadow-neon">
-              Guardar producto
-            </Button>
+            <div className="flex flex-col gap-2 pt-2">
+              <Button onClick={handleSaveProduct} className="w-full bg-gradient-brand text-primary-foreground shadow-neon font-bold">
+                {isEditing ? "Actualizar cambios" : "Guardar producto"}
+              </Button>
+              
+              {isEditing && (
+                <Button 
+                  variant="ghost" 
+                  onClick={handleDelete}
+                  className="w-full text-red-500 hover:text-red-600 hover:bg-red-50/10"
+                >
+                  Eliminar Producto
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
