@@ -6,7 +6,7 @@ import type { Product } from "@/types/product";
 
 const STORAGE_KEY = "gusstore_products_v1";
 const ANNOUNCEMENT_STORAGE_KEY = "gusstore_announcement_v1";
-const BASE_WHATSAPP_DOMAIN = "https://wa.me/51928862832?text=Hola,%20me%20interesa%20comprar:%20";
+const BASE_WHATSAPP_DOMAIN = "https://wa.me/51928862832?text=";
 const DEFAULT_ANNOUNCEMENT = "🔥 Ofertas activas hoy: entrega rápida y soporte directo por WhatsApp";
 
 const DEFAULT_PRODUCTS: Product[] = [
@@ -44,8 +44,10 @@ const DEFAULT_PRODUCTS: Product[] = [
   },
 ];
 
-export const createWhatsAppUrl = (productName: string) =>
-  `${BASE_WHATSAPP_DOMAIN}${encodeURIComponent(productName.trim())}`;
+export const createWhatsAppUrl = (productName: string, productPrice: number) => {
+  const message = `Hola Gus, vengo de tu web Gus Store. Quiero la cuenta de ${productName} de S/ ${productPrice.toFixed(2)}. ¿A dónde te Yapeo?`;
+  return `${BASE_WHATSAPP_DOMAIN}${encodeURIComponent(message)}`;
+};
 
 export const loadProducts = (): Product[] => {
   const raw = localStorage.getItem(STORAGE_KEY);
