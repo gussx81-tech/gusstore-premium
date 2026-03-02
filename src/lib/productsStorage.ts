@@ -5,7 +5,9 @@ import soundmaxImage from "@/assets/soundmax.jpg";
 import type { Product } from "@/types/product";
 
 const STORAGE_KEY = "gusstore_products_v1";
-const BASE_WHATSAPP_DOMAIN = "https://codesperu.lat/pay?item=";
+const ANNOUNCEMENT_STORAGE_KEY = "gusstore_announcement_v1";
+const BASE_WHATSAPP_DOMAIN = "https://wa.me/51928862832?text=Hola,%20me%20interesa%20comprar:%20";
+const DEFAULT_ANNOUNCEMENT = "🔥 Ofertas activas hoy: entrega rápida y soporte directo por WhatsApp";
 
 const DEFAULT_PRODUCTS: Product[] = [
   {
@@ -61,4 +63,12 @@ export const loadProducts = (): Product[] => {
 
 export const saveProducts = (products: Product[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+};
+
+export const loadAnnouncement = (): string => {
+  return localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY) || DEFAULT_ANNOUNCEMENT;
+};
+
+export const saveAnnouncement = (announcement: string) => {
+  localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, announcement.trim() || DEFAULT_ANNOUNCEMENT);
 };

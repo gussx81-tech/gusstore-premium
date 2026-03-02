@@ -3,14 +3,17 @@ import ProductEditorDialog from "@/components/admin/ProductEditorDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { loadProducts, saveProducts } from "@/lib/productsStorage";
+import { loadAnnouncement, loadProducts, saveAnnouncement, saveProducts } from "@/lib/productsStorage";
 import type { Product } from "@/types/product";
 
-const ADMIN_PASS = "gusstore2026";
+const ADMIN_USER = "Guss81";
+const ADMIN_PASS = "Gustavo81@";
 const ADMIN_AUTH_KEY = "gusstore_admin_auth";
 
 const Admin = () => {
   const [products, setProducts] = useState<Product[]>(() => loadProducts());
+  const [announcement, setAnnouncement] = useState(() => loadAnnouncement());
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem(ADMIN_AUTH_KEY) === "ok");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -20,6 +23,10 @@ const Admin = () => {
     saveProducts(products);
   }, [products]);
 
+  useEffect(() => {
+    saveAnnouncement(announcement);
+  }, [announcement]);
+
   const totalStock = useMemo(
     () => products.filter((product) => product.stock === "Disponible").length,
     [products],
@@ -27,7 +34,7 @@ const Admin = () => {
 
   const handleLogin = (event: FormEvent) => {
     event.preventDefault();
-    if (password === ADMIN_PASS) {
+    if (username.trim() === ADMIN_USER && password === ADMIN_PASS) {
       localStorage.setItem(ADMIN_AUTH_KEY, "ok");
       setIsAuthenticated(true);
     }
@@ -43,6 +50,7 @@ const Admin = () => {
   const handleLogout = () => {
     localStorage.removeItem(ADMIN_AUTH_KEY);
     setIsAuthenticated(false);
+    setUsername("");
     setPassword("");
   };
 
@@ -55,6 +63,15 @@ const Admin = () => {
           <p className="mt-2 text-sm text-muted-foreground">Ingresa la contraseña para gestionar Gusstore.lat.</p>
 
           <form onSubmit={handleLogin} className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-user">Usuario</Label>
+              <Input
+                id="admin-user"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Guss81"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="admin-password">Contraseña</Label>
               <Input
@@ -103,6 +120,18 @@ const Admin = () => {
             </div>
           </div>
         </header>
+
+        <section className="glass-card rounded-2xl p-5">
+          <div className="space-y-2">
+            <Label htmlFor="announcement">Texto del banner de ofertas</Label>
+            <Input
+              id="announcement"
+              value={announcement}
+              onChange={(e) => setAnnouncement(e.target.value)}
+              placeholder="Escribe el mensaje que se mostrará en el banner"
+            />
+          </div>
+        </section>
 
         <section className="grid gap-4 md:grid-cols-2">
           {products.map((product) => (
