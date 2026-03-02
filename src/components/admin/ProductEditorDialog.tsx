@@ -7,13 +7,14 @@ import { Label } from "@/components/ui/label";
 import { getCroppedImage } from "@/lib/cropImage";
 import { createWhatsAppUrl } from "@/lib/productsStorage";
 import type { Product, ProductStock } from "@/types/product";
+import { supabase } from "@/integrations/supabase/client"; // Conexión a DB
+import { Trash2 } from "lucide-react"; // Icono de basura
 
 interface ProductEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialProduct?: Product | null;
   onSave: (product: Product) => void;
-  onDelete?: (id: string) => void; // <-- Nueva prop para borrar
 }
 
 interface ProductDraft {
@@ -32,7 +33,7 @@ const emptyDraft: ProductDraft = {
   image: "",
 };
 
-const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDelete }: ProductEditorDialogProps) => {
+const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave }: ProductEditorDialogProps) => {
   const isEditing = Boolean(initialProduct);
   const [draft, setDraft] = useState<ProductDraft>(emptyDraft);
   const [cropOpen, setCropOpen] = useState(false);
@@ -45,7 +46,6 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDel
 
   useEffect(() => {
     if (!open) return;
-
     setDraft(
       initialProduct
         ? {
@@ -62,7 +62,6 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDel
   const handleUploadImage = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = () => {
       setCropImage(String(reader.result));
@@ -75,7 +74,6 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDel
 
   const handleCropSave = async () => {
     if (!cropImage || !croppedAreaPixels) return;
-
     const cropped = await getCroppedImage(cropImage, croppedAreaPixels);
     setDraft((prev) => ({ ...prev, image: cropped }));
     setCropOpen(false);
@@ -84,7 +82,6 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDel
   const handleSaveProduct = () => {
     const cleanName = draft.name.trim();
     if (!cleanName || draft.price <= 0) return;
-
     onSave({
       id: initialProduct?.id ?? crypto.randomUUID(),
       name: cleanName,
@@ -93,15 +90,31 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDel
       whatsappUrl: draft.whatsappUrl.trim() || createWhatsAppUrl(cleanName, Number(draft.price)),
       image: draft.image,
     });
-
     onOpenChange(false);
   };
 
-  // Función para manejar el borrado
-  const handleDelete = () => {
-    if (initialProduct && confirm(`¿Estás seguro de que quieres eliminar "${initialProduct.name}"?`)) {
-      onDelete?.(initialProduct.id);
-      onOpenChange(false);
+  // --- FUNCIÓN PARA ELIMINAR ---
+  const handleDeleteProduct = async () => {
+    if (!initialProduct?.id) return;
+    
+    const confirmDelete = confirm(`¿Estás seguro de eliminar "${draft.name}"? Esta acción no se puede deshacer.`);
+    
+    if (confirmDelete) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', initialProduct.id);
+
+        if (error) throw error;
+        
+        alert("Producto eliminado.");
+        onOpenChange(false);
+        window.location.reload(); // Recarga para que desaparezca de la lista
+      } catch (err) {
+        console.error(err);
+        alert("Error al eliminar el producto. Inténtalo de nuevo.");
+      }
     }
   };
 
@@ -143,7 +156,7 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDel
                   id="stock"
                   value={draft.stock}
                   onChange={(e) => setDraft((prev) => ({ ...prev, stock: e.target.value as ProductStock }))}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="Disponible">Disponible</option>
                   <option value="Agotado">Agotado</option>
@@ -164,31 +177,28 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDel
             <div className="space-y-2">
               <Label htmlFor="image">Imagen del producto</Label>
               <Input id="image" type="file" accept="image/*" onChange={handleUploadImage} />
-              {draft.image ? (
+              {draft.image && (
                 <img
                   src={draft.image}
-                  alt="Preview del producto"
+                  alt="Preview"
                   className="mt-2 h-40 w-full rounded-lg border border-border/50 object-cover"
                 />
-              ) : (
-                <div className="rounded-lg border border-dashed border-border/70 p-6 text-center text-sm text-muted-foreground">
-                  Sube una imagen y recórtala en formato perfecto.
-                </div>
               )}
             </div>
 
-            <div className="flex flex-col gap-2 pt-2">
+            <div className="flex flex-col gap-2 pt-4">
               <Button onClick={handleSaveProduct} className="w-full bg-gradient-brand text-primary-foreground shadow-neon font-bold">
-                {isEditing ? "Actualizar cambios" : "Guardar producto"}
+                {isEditing ? "Guardar cambios" : "Crear producto"}
               </Button>
               
               {isEditing && (
                 <Button 
-                  variant="ghost" 
-                  onClick={handleDelete}
-                  className="w-full text-red-500 hover:text-red-600 hover:bg-red-50/10"
+                  variant="outline" 
+                  onClick={handleDeleteProduct}
+                  className="w-full border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white transition-all flex gap-2 items-center justify-center"
                 >
-                  Eliminar Producto
+                  <Trash2 className="h-4 w-4" />
+                  Eliminar permanentemente
                 </Button>
               )}
             </div>
@@ -214,29 +224,9 @@ const ProductEditorDialog = ({ open, onOpenChange, initialProduct, onSave, onDel
                 onCropComplete={(_, areaPixels) => setCroppedAreaPixels(areaPixels)}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="zoom">Zoom</Label>
-              <input
-                id="zoom"
-                type="range"
-                min={1}
-                max={3}
-                step={0.1}
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => setCropOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCropSave} className="bg-gradient-brand text-primary-foreground shadow-neon">
-                Guardar recorte
-              </Button>
-            </div>
+            <Button onClick={handleCropSave} className="w-full bg-gradient-brand text-primary-foreground">
+              Guardar recorte
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
