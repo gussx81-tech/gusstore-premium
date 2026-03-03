@@ -94,18 +94,19 @@ const ProductEditorDialog = ({
   const handleSaveProduct = () => {
     if (!draft.name.trim() || draft.price <= 0) return;
 
+    // Obtenemos los datos del dueño (si es edición mantenemos los originales, si es nuevo usamos los del usuario logueado)
     const ownerData = initialProduct
       ? {
           ownerId: initialProduct.ownerId,
           ownerUsername: initialProduct.ownerUsername,
-          ownerName: initialProduct.ownerName,
+          ownerName: initialProduct.ownerName || "Gusstore",
           ownerPhone: initialProduct.ownerPhone,
           ownerLogo: initialProduct.ownerLogo,
         }
       : {
           ownerId: currentUser.id,
           ownerUsername: currentUser.username,
-          ownerName: currentUser.providerName,
+          ownerName: currentUser.providerName || currentUser.username || "Gusstore",
           ownerPhone: currentUser.phone,
           ownerLogo: currentUser.logo,
         };
@@ -116,7 +117,8 @@ const ProductEditorDialog = ({
       price: Number(draft.price),
       stock: draft.stock,
       category: draft.category,
-      whatsappUrl: createWhatsAppUrl(draft.name.trim(), Number(draft.price), ownerData.ownerPhone),
+      // AQUÍ AGREGAMOS EL ownerData.ownerName COMO CUARTO PARÁMETRO
+      whatsappUrl: createWhatsAppUrl(draft.name.trim(), Number(draft.price), ownerData.ownerPhone, ownerData.ownerName),
       image: draft.image,
       ...ownerData,
     });
