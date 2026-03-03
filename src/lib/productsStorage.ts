@@ -17,6 +17,26 @@ const BASE_WHATSAPP_DOMAIN = "https://wa.me";
 const DEFAULT_ANNOUNCEMENT = "🔥 Ofertas activas hoy: entrega rápida y soporte directo por WhatsApp";
 const DEFAULT_CATEGORIES = ["Streaming", "Gaming", "Música"];
 
+/**
+ * Genera la URL de WhatsApp con mensaje personalizado según el dueño del producto.
+ */
+export const createWhatsAppUrl = (productName: string, productPrice: number, ownerPhone: string, ownerName: string) => {
+  const safePhone = ownerPhone.replace(/\D/g, "") || SUPER_ADMIN_PHONE;
+  
+  // Identificamos si eres tú (Gusstore) o un socio
+  const isMainAdmin = (ownerName === SUPER_ADMIN_PROVIDER_NAME || ownerName === "Guss81" || ownerName === "Gusstore");
+  
+  // Configuración del saludo
+  const finalGreetingName = isMainAdmin ? "Gusstore" : ownerName;
+
+  // Configuración de la referencia a la web (Tu web vs La web)
+  const webReference = isMainAdmin ? "tu web Gus Store" : "la web Gus Store";
+
+  const message = `Hola ${finalGreetingName}, vengo de ${webReference}. Quiero la cuenta de ${productName} de S/ ${productPrice.toFixed(2)}. ¿A dónde te Yapeo?`;
+  
+  return `${BASE_WHATSAPP_DOMAIN}/${safePhone}?text=${encodeURIComponent(message)}`;
+};
+
 const DEFAULT_PRODUCTS: Product[] = [
   {
     id: "1",
@@ -24,7 +44,7 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 29,
     stock: "Disponible",
     category: "Streaming",
-    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}/${SUPER_ADMIN_PHONE}`,
+    whatsappUrl: "", 
     image: netstreamImage,
     ownerId: SUPER_ADMIN_ID,
     ownerUsername: SUPER_ADMIN_USERNAME,
@@ -37,46 +57,14 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 35,
     stock: "Disponible",
     category: "Streaming",
-    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}/${SUPER_ADMIN_PHONE}`,
+    whatsappUrl: "",
     image: cineplusImage,
     ownerId: SUPER_ADMIN_ID,
     ownerUsername: SUPER_ADMIN_USERNAME,
     ownerName: SUPER_ADMIN_PROVIDER_NAME,
     ownerPhone: SUPER_ADMIN_PHONE,
   },
-  {
-    id: "3",
-    name: "Recarga Free Fire",
-    price: 15,
-    stock: "Agotado",
-    category: "Gaming",
-    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}/${SUPER_ADMIN_PHONE}`,
-    image: freefireImage,
-    ownerId: SUPER_ADMIN_ID,
-    ownerUsername: SUPER_ADMIN_USERNAME,
-    ownerName: SUPER_ADMIN_PROVIDER_NAME,
-    ownerPhone: SUPER_ADMIN_PHONE,
-  },
-  {
-    id: "4",
-    name: "SoundMax Pro",
-    price: 19,
-    stock: "Disponible",
-    category: "Música",
-    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}/${SUPER_ADMIN_PHONE}`,
-    image: soundmaxImage,
-    ownerId: SUPER_ADMIN_ID,
-    ownerUsername: SUPER_ADMIN_USERNAME,
-    ownerName: SUPER_ADMIN_PROVIDER_NAME,
-    ownerPhone: SUPER_ADMIN_PHONE,
-  },
 ];
-
-export const createWhatsAppUrl = (productName: string, productPrice: number, ownerPhone: string) => {
-  const safePhone = ownerPhone.replace(/\D/g, "") || SUPER_ADMIN_PHONE;
-  const message = `Hola Gus, vengo de tu web Gus Store. Quiero la cuenta de ${productName} de S/ ${productPrice.toFixed(2)}. ¿A dónde te Yapeo?`;
-  return `${BASE_WHATSAPP_DOMAIN}/${safePhone}?text=${encodeURIComponent(message)}`;
-};
 
 const normalizeCategories = (categories: string[]) => {
   const unique = Array.from(new Set(categories.map((category) => category.trim()).filter(Boolean)));
@@ -86,7 +74,6 @@ const normalizeCategories = (categories: string[]) => {
 export const loadCategories = (): string[] => {
   const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
   if (!raw) return DEFAULT_CATEGORIES;
-
   try {
     return normalizeCategories(JSON.parse(raw) as string[]);
   } catch {
@@ -123,7 +110,8 @@ export const loadProducts = (): Product[] => {
         ownerName,
         ownerPhone,
         ownerLogo: product.ownerLogo,
-        whatsappUrl: createWhatsAppUrl(product.name, Number(product.price), ownerPhone),
+        // Aquí se genera el link con la nueva lógica de nombres y webReference
+        whatsappUrl: createWhatsAppUrl(product.name, Number(product.price), ownerPhone, ownerName),
       };
     });
   } catch {
@@ -142,5 +130,3 @@ export const loadAnnouncement = (): string => {
 export const saveAnnouncement = (announcement: string) => {
   localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, announcement.trim() || DEFAULT_ANNOUNCEMENT);
 };
-
-
