@@ -8,5 +8,11 @@ export interface Product {
   category: string;
   whatsappUrl: string;
   image: string;
+  ownerId: string;
+  ownerUsername: string;
+  ownerName: string;
+  ownerPhone: string;
+  ownerLogo?: string;
 }
+
 

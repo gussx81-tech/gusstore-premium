@@ -2,12 +2,18 @@ import cineplusImage from "@/assets/cineplus.jpg";
 import freefireImage from "@/assets/freefire-topup.jpg";
 import netstreamImage from "@/assets/netstream.jpg";
 import soundmaxImage from "@/assets/soundmax.jpg";
+import {
+  SUPER_ADMIN_ID,
+  SUPER_ADMIN_PHONE,
+  SUPER_ADMIN_PROVIDER_NAME,
+  SUPER_ADMIN_USERNAME,
+} from "@/lib/authStorage";
 import type { Product } from "@/types/product";
 
 const STORAGE_KEY = "gusstore_products_v1";
 const ANNOUNCEMENT_STORAGE_KEY = "gusstore_announcement_v1";
 const CATEGORIES_STORAGE_KEY = "gusstore_categories_v1";
-const BASE_WHATSAPP_DOMAIN = "https://wa.me/51928862832?text=";
+const BASE_WHATSAPP_DOMAIN = "https://wa.me";
 const DEFAULT_ANNOUNCEMENT = "🔥 Ofertas activas hoy: entrega rápida y soporte directo por WhatsApp";
 const DEFAULT_CATEGORIES = ["Streaming", "Gaming", "Música"];
 
@@ -18,8 +24,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 29,
     stock: "Disponible",
     category: "Streaming",
-    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}${encodeURIComponent("NetStream Premium")}`,
+    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}/${SUPER_ADMIN_PHONE}`,
     image: netstreamImage,
+    ownerId: SUPER_ADMIN_ID,
+    ownerUsername: SUPER_ADMIN_USERNAME,
+    ownerName: SUPER_ADMIN_PROVIDER_NAME,
+    ownerPhone: SUPER_ADMIN_PHONE,
   },
   {
     id: "2",
@@ -27,8 +37,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 35,
     stock: "Disponible",
     category: "Streaming",
-    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}${encodeURIComponent("CinePlus Ultra")}`,
+    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}/${SUPER_ADMIN_PHONE}`,
     image: cineplusImage,
+    ownerId: SUPER_ADMIN_ID,
+    ownerUsername: SUPER_ADMIN_USERNAME,
+    ownerName: SUPER_ADMIN_PROVIDER_NAME,
+    ownerPhone: SUPER_ADMIN_PHONE,
   },
   {
     id: "3",
@@ -36,8 +50,12 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 15,
     stock: "Agotado",
     category: "Gaming",
-    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}${encodeURIComponent("Recarga Free Fire")}`,
+    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}/${SUPER_ADMIN_PHONE}`,
     image: freefireImage,
+    ownerId: SUPER_ADMIN_ID,
+    ownerUsername: SUPER_ADMIN_USERNAME,
+    ownerName: SUPER_ADMIN_PROVIDER_NAME,
+    ownerPhone: SUPER_ADMIN_PHONE,
   },
   {
     id: "4",
@@ -45,14 +63,19 @@ const DEFAULT_PRODUCTS: Product[] = [
     price: 19,
     stock: "Disponible",
     category: "Música",
-    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}${encodeURIComponent("SoundMax Pro")}`,
+    whatsappUrl: `${BASE_WHATSAPP_DOMAIN}/${SUPER_ADMIN_PHONE}`,
     image: soundmaxImage,
+    ownerId: SUPER_ADMIN_ID,
+    ownerUsername: SUPER_ADMIN_USERNAME,
+    ownerName: SUPER_ADMIN_PROVIDER_NAME,
+    ownerPhone: SUPER_ADMIN_PHONE,
   },
 ];
 
-export const createWhatsAppUrl = (productName: string, productPrice: number) => {
-  const message = `Hola Gus, vengo de tu web Gus Store. Quiero la cuenta de ${productName} de S/ ${productPrice}. ¿A dónde te Yapeo?`;
-  return `${BASE_WHATSAPP_DOMAIN}${encodeURIComponent(message)}`;
+export const createWhatsAppUrl = (productName: string, productPrice: number, ownerPhone: string) => {
+  const safePhone = ownerPhone.replace(/\D/g, "") || SUPER_ADMIN_PHONE;
+  const message = `Hola Gus, vengo de tu web Gus Store. Quiero la cuenta de ${productName} de S/ ${productPrice.toFixed(2)}. ¿A dónde te Yapeo?`;
+  return `${BASE_WHATSAPP_DOMAIN}/${safePhone}?text=${encodeURIComponent(message)}`;
 };
 
 const normalizeCategories = (categories: string[]) => {
@@ -62,9 +85,7 @@ const normalizeCategories = (categories: string[]) => {
 
 export const loadCategories = (): string[] => {
   const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-  if (!raw) {
-    return DEFAULT_CATEGORIES;
-  }
+  if (!raw) return DEFAULT_CATEGORIES;
 
   try {
     return normalizeCategories(JSON.parse(raw) as string[]);
@@ -79,24 +100,32 @@ export const saveCategories = (categories: string[]) => {
 
 export const loadProducts = (): Product[] => {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return DEFAULT_PRODUCTS;
-  }
+  if (!raw) return DEFAULT_PRODUCTS;
 
   try {
     const parsed = JSON.parse(raw) as Product[];
-    if (!parsed.length) {
-      return DEFAULT_PRODUCTS;
-    }
+    if (!parsed.length) return DEFAULT_PRODUCTS;
 
     const categories = loadCategories();
     const fallbackCategory = categories[0] || "Streaming";
 
-    return parsed.map((product) => ({
-      ...product,
-      category: product.category?.trim() || fallbackCategory,
-      whatsappUrl: product.whatsappUrl || createWhatsAppUrl(product.name, product.price),
-    }));
+    return parsed.map((product) => {
+      const ownerId = product.ownerId || SUPER_ADMIN_ID;
+      const ownerUsername = product.ownerUsername || SUPER_ADMIN_USERNAME;
+      const ownerName = product.ownerName || SUPER_ADMIN_PROVIDER_NAME;
+      const ownerPhone = product.ownerPhone || SUPER_ADMIN_PHONE;
+
+      return {
+        ...product,
+        category: product.category?.trim() || fallbackCategory,
+        ownerId,
+        ownerUsername,
+        ownerName,
+        ownerPhone,
+        ownerLogo: product.ownerLogo,
+        whatsappUrl: createWhatsAppUrl(product.name, Number(product.price), ownerPhone),
+      };
+    });
   } catch {
     return DEFAULT_PRODUCTS;
   }
@@ -113,4 +142,5 @@ export const loadAnnouncement = (): string => {
 export const saveAnnouncement = (announcement: string) => {
   localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, announcement.trim() || DEFAULT_ANNOUNCEMENT);
 };
+
 
