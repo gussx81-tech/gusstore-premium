@@ -1,7 +1,3 @@
-import cineplusImage from "@/assets/cineplus.jpg";
-import freefireImage from "@/assets/freefire-topup.jpg";
-import netstreamImage from "@/assets/netstream.jpg";
-import soundmaxImage from "@/assets/soundmax.jpg";
 import {
   SUPER_ADMIN_ID,
   SUPER_ADMIN_PHONE,
@@ -17,36 +13,37 @@ const BASE_WHATSAPP_DOMAIN = "https://wa.me";
 const DEFAULT_ANNOUNCEMENT = "🔥 Ofertas activas hoy: entrega rápida y soporte directo por WhatsApp";
 const DEFAULT_CATEGORIES = ["Streaming", "Gaming", "Música"];
 
+// Imágenes por defecto (Usamos links directos para evitar errores de importación en GitHub)
+const netstreamImage = "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=500";
+const cineplusImage = "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=500";
+const freefireImage = "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500";
+const soundmaxImage = "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500";
+
 /**
  * Genera la URL de WhatsApp.
- * Si no encuentra nombre, lo deja vacío como pediste.
+ * Lógica: Si eres tú "Gusstore", si es socio su nombre.
  */
 export const createWhatsAppUrl = (productName: string, productPrice: number, ownerPhone: string, ownerName?: string) => {
   const safePhone = ownerPhone?.replace(/\D/g, "") || SUPER_ADMIN_PHONE;
   
-  // 1. Limpiamos el nombre: si es "undefined" o no existe, queda como un texto vacío ""
+  // Limpiamos el nombre: si no existe o es "undefined", queda vacío
   let cleanName = "";
   if (ownerName && ownerName !== "undefined" && ownerName !== "null") {
     cleanName = ownerName.trim();
   }
 
-  // 2. Lógica de saludo: Si eres tú, usamos Gusstore. Si es socio, su nombre. Si es nada, vacío.
-  let finalGreetingName = cleanName;
+  // Identificamos si es el Admin Principal
   const isMainAdmin = (
+    !cleanName ||
     cleanName === "Gusstore" || 
     cleanName === "Guss81" || 
     cleanName === SUPER_ADMIN_PROVIDER_NAME || 
     cleanName === SUPER_ADMIN_USERNAME
   );
 
-  if (isMainAdmin) {
-    finalGreetingName = "Gusstore";
-  }
-
-  // 3. Referencia a la web: Si es Admin "tu web", si no "la web"
+  const finalGreetingName = isMainAdmin ? "Gusstore" : cleanName;
   const webReference = isMainAdmin ? "tu web Gus Store" : "la web Gus Store";
 
-  // El saludo dirá "Hola ," si el nombre está vacío.
   const message = `Hola ${finalGreetingName}, vengo de ${webReference}. Quiero la cuenta de ${productName} de S/ ${productPrice.toFixed(2)}. ¿A dónde te Yapeo?`;
   
   return `${BASE_WHATSAPP_DOMAIN}/${safePhone}?text=${encodeURIComponent(message)}`;
@@ -61,6 +58,19 @@ const DEFAULT_PRODUCTS: Product[] = [
     category: "Streaming",
     whatsappUrl: "", 
     image: netstreamImage,
+    ownerId: SUPER_ADMIN_ID,
+    ownerUsername: SUPER_ADMIN_USERNAME,
+    ownerName: SUPER_ADMIN_PROVIDER_NAME,
+    ownerPhone: SUPER_ADMIN_PHONE,
+  },
+  {
+    id: "2",
+    name: "CinePlus Ultra",
+    price: 35,
+    stock: "Disponible",
+    category: "Streaming",
+    whatsappUrl: "",
+    image: cineplusImage,
     ownerId: SUPER_ADMIN_ID,
     ownerUsername: SUPER_ADMIN_USERNAME,
     ownerName: SUPER_ADMIN_PROVIDER_NAME,
@@ -80,8 +90,7 @@ export const loadProducts = (): Product[] => {
     const fallbackCategory = categories[0] || "Streaming";
 
     return parsed.map((product) => {
-      // Hacemos todo lo posible por leer el nombre guardado en el producto
-      // Si no existe en el producto, no le ponemos el del admin por defecto aquí
+      // Rastreamos el nombre del dueño para que no salga vacío
       const currentOwnerName = product.ownerName || product.ownerUsername || "";
       const currentOwnerPhone = product.ownerPhone || SUPER_ADMIN_PHONE;
 
@@ -90,7 +99,6 @@ export const loadProducts = (): Product[] => {
         category: product.category?.trim() || fallbackCategory,
         ownerName: currentOwnerName,
         ownerPhone: currentOwnerPhone,
-        // Generamos el link con lo que sea que hayamos encontrado (nombre o vacío)
         whatsappUrl: createWhatsAppUrl(product.name, Number(product.price), currentOwnerPhone, currentOwnerName),
       };
     });
@@ -99,7 +107,7 @@ export const loadProducts = (): Product[] => {
   }
 };
 
-// --- Funciones de apoyo (Categorías y Anuncios) ---
+// --- Funciones de Persistencia ---
 const normalizeCategories = (categories: string[]) => {
   const unique = Array.from(new Set(categories.map((category) => category.trim()).filter(Boolean)));
   return unique.length ? unique : DEFAULT_CATEGORIES;
