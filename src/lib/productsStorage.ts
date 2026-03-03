@@ -18,18 +18,24 @@ const DEFAULT_ANNOUNCEMENT = "🔥 Ofertas activas hoy: entrega rápida y soport
 const DEFAULT_CATEGORIES = ["Streaming", "Gaming", "Música"];
 
 /**
- * Genera la URL de WhatsApp con mensaje personalizado según el dueño del producto.
+ * Genera la URL de WhatsApp con mensaje personalizado.
+ * Blindado contra errores de "undefined".
  */
-export const createWhatsAppUrl = (productName: string, productPrice: number, ownerPhone: string, ownerName: string) => {
-  const safePhone = ownerPhone.replace(/\D/g, "") || SUPER_ADMIN_PHONE;
+export const createWhatsAppUrl = (productName: string, productPrice: number, ownerPhone: string, ownerName?: string) => {
+  const safePhone = ownerPhone?.replace(/\D/g, "") || SUPER_ADMIN_PHONE;
   
-  // Identificamos si eres tú (Gusstore) o un socio
-  const isMainAdmin = (ownerName === SUPER_ADMIN_PROVIDER_NAME || ownerName === "Guss81" || ownerName === "Gusstore");
+  // Si el nombre no existe o es el texto "undefined", usamos Gusstore por defecto
+  const nameToUse = (ownerName && ownerName !== "undefined" && ownerName !== "") ? ownerName : "Gusstore";
   
-  // Configuración del saludo
-  const finalGreetingName = isMainAdmin ? "Gusstore" : ownerName;
-
-  // Configuración de la referencia a la web (Tu web vs La web)
+  // Identificamos si eres tú (Gusstore) o un socio para el estilo del mensaje
+  const isMainAdmin = (
+    nameToUse === "Gusstore" || 
+    nameToUse === "Guss81" || 
+    nameToUse === SUPER_ADMIN_PROVIDER_NAME || 
+    nameToUse === SUPER_ADMIN_USERNAME
+  );
+  
+  const finalGreetingName = isMainAdmin ? "Gusstore" : nameToUse;
   const webReference = isMainAdmin ? "tu web Gus Store" : "la web Gus Store";
 
   const message = `Hola ${finalGreetingName}, vengo de ${webReference}. Quiero la cuenta de ${productName} de S/ ${productPrice.toFixed(2)}. ¿A dónde te Yapeo?`;
@@ -97,6 +103,7 @@ export const loadProducts = (): Product[] => {
     const fallbackCategory = categories[0] || "Streaming";
 
     return parsed.map((product) => {
+      // Recuperamos los datos del dueño o ponemos los del admin por defecto
       const ownerId = product.ownerId || SUPER_ADMIN_ID;
       const ownerUsername = product.ownerUsername || SUPER_ADMIN_USERNAME;
       const ownerName = product.ownerName || SUPER_ADMIN_PROVIDER_NAME;
@@ -110,7 +117,7 @@ export const loadProducts = (): Product[] => {
         ownerName,
         ownerPhone,
         ownerLogo: product.ownerLogo,
-        // Aquí se genera el link con la nueva lógica de nombres y webReference
+        // Generamos el link de WhatsApp con el blindaje anti-undefined
         whatsappUrl: createWhatsAppUrl(product.name, Number(product.price), ownerPhone, ownerName),
       };
     });
