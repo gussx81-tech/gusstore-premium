@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import HeroSection from "@/components/store/HeroSection";
 import ProductCard from "@/components/store/ProductCard";
-import { loadAnnouncement, loadProducts } from "@/lib/productsStorage";
+import StreamingCarousel from "@/components/store/StreamingCarousel";
+import { loadAnnouncement, loadCategories, loadProducts } from "@/lib/productsStorage";
 import type { Product } from "@/types/product";
+
+const ALL_FILTER = "Todos";
 
 const Index = () => {
   const [products, setProducts] = useState<Product[]>(() => loadProducts());
   const [announcement, setAnnouncement] = useState(() => loadAnnouncement());
+  const [categories, setCategories] = useState<string[]>(() => loadCategories());
+  const [activeCategory, setActiveCategory] = useState(ALL_FILTER);
 
   useEffect(() => {
     const syncData = () => {
       setProducts(loadProducts());
       setAnnouncement(loadAnnouncement());
+      setCategories(loadCategories());
     };
 
     window.addEventListener("storage", syncData);
@@ -47,7 +53,25 @@ const Index = () => {
     canonical.setAttribute("href", window.location.origin);
   }, []);
 
-  const availableProducts = useMemo(() => products.filter((product) => product.stock === "Disponible").length, [products]);
+  const streamingProducts = useMemo(
+    () => products.filter((product) => product.category === "Streaming"),
+    [products],
+  );
+
+  const filteredProducts = useMemo(() => {
+    if (activeCategory === ALL_FILTER) {
+      return products;
+    }
+
+    return products.filter((product) => product.category === activeCategory);
+  }, [products, activeCategory]);
+
+  const availableProducts = useMemo(
+    () => filteredProducts.filter((product) => product.stock === "Disponible").length,
+    [filteredProducts],
+  );
+
+  const categoryFilters = useMemo(() => [ALL_FILTER, ...categories], [categories]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -57,9 +81,27 @@ const Index = () => {
         </div>
       </section>
 
+      <StreamingCarousel products={streamingProducts} />
       <HeroSection />
 
       <main id="catalogo" className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-14 sm:px-6 lg:px-10">
+        <section className="mb-4 flex flex-wrap gap-2">
+          {categoryFilters.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setActiveCategory(category)}
+              className={`rounded-full border px-4 py-1.5 text-sm transition ${
+                activeCategory === category
+                  ? "border-primary bg-primary text-primary-foreground shadow-neon"
+                  : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </section>
+
         <section className="mb-7 flex items-end justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Catálogo</p>
@@ -69,7 +111,7 @@ const Index = () => {
         </section>
 
         <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </section>
@@ -79,3 +121,4 @@ const Index = () => {
 };
 
 export default Index;
+

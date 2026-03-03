@@ -3,7 +3,14 @@ import ProductEditorDialog from "@/components/admin/ProductEditorDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { loadAnnouncement, loadProducts, saveAnnouncement, saveProducts } from "@/lib/productsStorage";
+import {
+  loadAnnouncement,
+  loadCategories,
+  loadProducts,
+  saveAnnouncement,
+  saveCategories,
+  saveProducts,
+} from "@/lib/productsStorage";
 import type { Product } from "@/types/product";
 
 const ADMIN_USER = "Guss81";
@@ -13,6 +20,8 @@ const ADMIN_AUTH_KEY = "gusstore_admin_auth";
 const Admin = () => {
   const [products, setProducts] = useState<Product[]>(() => loadProducts());
   const [announcement, setAnnouncement] = useState(() => loadAnnouncement());
+  const [categories, setCategories] = useState<string[]>(() => loadCategories());
+  const [newCategory, setNewCategory] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem(ADMIN_AUTH_KEY) === "ok");
@@ -26,6 +35,10 @@ const Admin = () => {
   useEffect(() => {
     saveAnnouncement(announcement);
   }, [announcement]);
+
+  useEffect(() => {
+    saveCategories(categories);
+  }, [categories]);
 
   const totalStock = useMemo(
     () => products.filter((product) => product.stock === "Disponible").length,
@@ -47,13 +60,35 @@ const Admin = () => {
     });
   };
 
-  // --- NUEVA FUNCIÓN PARA BORRAR ---
   const handleDeleteProduct = (id: string) => {
     if (confirm("¿Estás seguro de que quieres eliminar este producto de Gus Store?")) {
       setProducts((prev) => prev.filter((p) => p.id !== id));
       setDialogOpen(false);
       setActiveProduct(null);
     }
+  };
+
+  const handleAddCategory = () => {
+    const trimmed = newCategory.trim();
+    if (!trimmed || categories.includes(trimmed)) {
+      return;
+    }
+    setCategories((prev) => [...prev, trimmed]);
+    setNewCategory("");
+  };
+
+  const handleDeleteCategory = (categoryToDelete: string) => {
+    const remaining = categories.filter((category) => category !== categoryToDelete);
+    if (!remaining.length) {
+      return;
+    }
+
+    setCategories(remaining);
+    setProducts((prev) =>
+      prev.map((product) =>
+        product.category === categoryToDelete ? { ...product, category: remaining[0] } : product,
+      ),
+    );
   };
 
   const handleLogout = () => {
@@ -107,6 +142,38 @@ const Admin = () => {
           <Input id="announcement" value={announcement} onChange={(e) => setAnnouncement(e.target.value)} className="mt-2" />
         </section>
 
+        <section className="glass-card rounded-2xl p-5 space-y-4">
+          <Label htmlFor="new-category">Categorías</Label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="new-category"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="Ej: Streaming"
+            />
+            <Button type="button" onClick={handleAddCategory} className="bg-gradient-brand text-primary-foreground shadow-neon">
+              Crear categoría
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <div key={category} className="flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-sm">
+                <span>{category}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => handleDeleteCategory(category)}
+                  disabled={categories.length === 1}
+                >
+                  ✕
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section className="grid gap-4 md:grid-cols-2">
           {products.map((product) => (
             <article key={product.id} className="glass-card rounded-2xl p-4">
@@ -115,7 +182,7 @@ const Admin = () => {
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-base font-semibold">{product.name}</h2>
                   <p className="text-sm text-muted-foreground">S/ {product.price.toFixed(2)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{product.stock}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{product.stock} · {product.category}</p>
                 </div>
               </div>
               <Button variant="outline" className="mt-4 w-full" onClick={() => { setActiveProduct(product); setDialogOpen(true); }}>Editar producto</Button>
@@ -129,10 +196,12 @@ const Admin = () => {
         onOpenChange={setDialogOpen}
         initialProduct={activeProduct}
         onSave={handleSaveProduct}
-        onDelete={handleDeleteProduct} // <-- Prop nueva conectada
+        onDelete={handleDeleteProduct}
+        categories={categories}
       />
     </main>
   );
 };
 
 export default Admin;
+
