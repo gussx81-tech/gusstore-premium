@@ -5,6 +5,8 @@ export interface Product {
   name: string;
   price: number;
   stock: ProductStock;
+  category: string;
   whatsappUrl: string;
   image: string;
 }
+
